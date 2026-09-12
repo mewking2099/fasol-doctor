@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fasol Doctor</string>
+    <string name="title_activity_main">Fasol Doctor</string>
+    <string name="package_name">io.fasol.doctor</string>
+    <string name="custom_url_scheme">io.fasol.doctor</string>
+</resources>

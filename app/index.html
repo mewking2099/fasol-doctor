@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#16a34a" />
+    <!-- Force light color-scheme so OS dark mode never touches native widgets -->
+    <meta name="color-scheme" content="light" />
+    <title>Fasol Doctor</title>
+    <!-- COOP only — single-threaded WASM needs no COEP, and COEP blocks cross-origin images -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <!-- Apply saved theme before first paint to prevent flash -->
+    <script>
+      try {
+        var dark = localStorage.getItem('darkMode') === 'true'
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+      } catch(e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

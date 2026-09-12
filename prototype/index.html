@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fasol Doctor — Prototype v2</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#1a1a2e;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px 48px;gap:16px}
+#breadcrumb{color:#ffffff60;font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;height:20px}
+#flow-label{color:#ffffff30;font-size:11px;letter-spacing:.04em;text-align:center;max-width:480px;line-height:1.6}
+
+/* Phone frame — device chrome, not a UI card */
+.phone{width:390px;height:844px;background:#f7f5f0;clip-path:inset(0 round 44px);overflow:hidden;position:relative;box-shadow:0 0 0 10px #222,0 0 0 12px #444,0 40px 80px rgba(0,0,0,.6);flex-shrink:0}
+.phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#111;border-radius:0 0 20px 20px;z-index:100}
+
+/* Screens */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:#f7f5f0;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transform:translateX(30px);transition:opacity 220ms ease,transform 220ms ease;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.screen.back-exit{transform:translateX(-30px);opacity:0}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;padding:44px 20px 14px;background:white;border-bottom:1px solid #f0ede8;gap:12px;flex-shrink:0}
+.topbar .back{color:#3d8c7a;font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.topbar .back:active{opacity:.6}
+.topbar .title{font-size:15px;font-weight:700;color:#1a1a1a}
+.topbar .right{margin-left:auto;font-size:13px;font-weight:600;color:#3d8c7a;cursor:pointer}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:17px 24px;border-radius:14px;border:none;font-size:16px;font-weight:700;cursor:pointer;transition:transform 80ms ease,opacity 80ms ease;-webkit-tap-highlight-color:transparent}
+.btn:active{transform:scale(.97);opacity:.9}
+.btn-primary{background:#3d8c7a;color:white}
+.btn-secondary{background:white;color:#3d8c7a;border:2px solid rgba(61,140,122,.3)}
+.btn-danger{background:white;color:#dc4a3d;border:2px solid rgba(220,74,61,.25)}
+
+/* Row card */
+.row-card{background:white;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px solid transparent;transition:transform 100ms ease;-webkit-tap-highlight-color:transparent}
+.row-card:active{transform:scale(.98);border-color:#3d8c7a}
+.row-card .icon-wrap{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.row-card .text{flex:1;min-width:0}
+.row-card .text p{font-size:15px;font-weight:700;color:#111}
+.row-card .text span{font-size:12px;color:#999;margin-top:2px;display:block}
+.row-card .arrow{color:#ccc;font-size:18px}
+
+/* Severity badge */
+.severity{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700}
+.sev-high{background:#fde8e8;color:#c0392b}
+.sev-med{background:#fef3c7;color:#92400e}
+.sev-low{background:#dcfce7;color:#166534}
+
+/* Escape */
+.escape{text-align:center;color:#888;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 0;margin-top:auto}
+.escape:active{color:#3d8c7a}
+
+/* ── HOME ── */
+.home-header{display:flex;align-items:center;padding:48px 20px 16px;background:white;border-bottom:1px solid #f0ede8;flex-shrink:0}
+.home-header h1{font-size:20px;font-weight:900;color:#111;letter-spacing:-.3px}
+.home-header .tagline{font-size:12px;color:#999;margin-top:1px}
+.home-header .icon-btn{margin-left:auto;width:36px;height:36px;background:#f0ede8;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.home-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px;flex:1;overflow-y:auto;scrollbar-width:none}
+.home-body::-webkit-scrollbar{display:none}
+
+/* Weather card */
+.weather-card{background:#3d8c7a;border-radius:16px;overflow:hidden;flex-shrink:0}
+.weather-top{padding:16px 18px 14px;display:flex;align-items:flex-start;gap:12px}
+.weather-emoji{font-size:32px;line-height:1;margin-top:2px}
+.weather-loc{font-size:11px;font-weight:600;color:rgba(255,255,255,.65);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.weather-temp{font-size:28px;font-weight:900;color:white;line-height:1;letter-spacing:-.5px}
+.weather-desc{font-size:13px;color:rgba(255,255,255,.7);margin-top:3px}
+.weather-risk{margin-left:auto;text-align:right;flex-shrink:0}
+.risk-label{font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.risk-badge{display:inline-block;margin-top:5px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:800}
+.risk-high{background:#ef4444;color:white}
+.risk-med{background:#f59e0b;color:white}
+.risk-low{background:#22c55e;color:white}
+.weather-bottom{background:rgba(0,0,0,.15);padding:10px 18px;display:flex;gap:20px}
+.w-stat{display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.8);font-weight:600}
+
+/* Alert card */
+.alert-card{background:#fffbf0;border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;border:1.5px solid rgba(245,158,11,.25);flex-shrink:0}
+.alert-tag{font-size:10px;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.alert-text{font-size:13px;color:#333;line-height:1.5}
+
+/* Previous detection */
+.prev-card{background:white;border-radius:14px;padding:14px 16px;border:1.5px solid rgba(61,140,122,.2);box-shadow:0 2px 8px rgba(0,0,0,.05);flex-shrink:0}
+.prev-label{font-size:11px;font-weight:700;color:#3d8c7a;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.prev-content{display:flex;align-items:center;gap:12px}
+.prev-icon{width:44px;height:44px;background:#fde8e8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.prev-info{flex:1}
+.prev-name{font-size:14px;font-weight:800;color:#111}
+.prev-meta{font-size:12px;color:#999;margin-top:2px}
+.prev-action{font-size:12px;font-weight:700;color:#3d8c7a;text-decoration:underline;text-underline-offset:2px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+
+/* Scan CTA */
+.scan-cta{background:#3d8c7a;border-radius:16px;padding:20px;display:flex;align-items:center;gap:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 80ms ease,opacity 80ms ease;flex-shrink:0;box-shadow:0 4px 16px rgba(61,140,122,.3)}
+.scan-cta:active{transform:scale(.98);opacity:.9}
+.scan-icon-wrap{width:56px;height:56px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.scan-text h2{font-size:17px;font-weight:900;color:white;letter-spacing:-.2px}
+.scan-text p{font-size:12px;color:rgba(255,255,255,.75);margin-top:3px;line-height:1.4}
+.scan-arrow{margin-left:auto;color:rgba(255,255,255,.5);font-size:22px;flex-shrink:0}
+
+/* Section heading */
+.sec-h{font-size:15px;font-weight:800;color:#111}
+.sec-s{font-size:12px;color:#999;margin-top:2px}
+
+/* Disease gallery */
+.disease-gallery{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.disease-gallery::-webkit-scrollbar{display:none}
+.disease-tile{background:white;border-radius:14px;padding:14px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:96px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1.5px solid transparent;-webkit-tap-highlight-color:transparent;transition:transform 80ms ease;flex-shrink:0}
+.disease-tile:active{transform:scale(.96);border-color:#3d8c7a}
+.disease-tile .dt-emoji{font-size:28px;line-height:1}
+.disease-tile .dt-name{font-size:11px;font-weight:700;color:#111;text-align:center;line-height:1.3}
+
+/* Helpline call button */
+.call-btn{background:white;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1.5px solid rgba(61,140,122,.15);-webkit-tap-highlight-color:transparent;transition:transform 80ms ease}
+.call-btn:active{transform:scale(.98)}
+.call-icon-wrap{width:48px;height:48px;background:#dcfce7;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.call-text p{font-size:15px;font-weight:700;color:#111}
+.call-text span{font-size:12px;color:#999;margin-top:2px;display:block}
+.call-number{margin-left:auto;font-size:20px;font-weight:900;color:#3d8c7a;letter-spacing:-.5px}
+
+/* ── CAMERA ── */
+.cam-header{padding:48px 20px 12px;display:flex;align-items:center;flex-shrink:0;background:#0d0d0d}
+.cam-close{color:rgba(255,255,255,.7);font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cam-title{margin:0 auto;font-size:14px;font-weight:700;color:rgba(255,255,255,.85)}
+.cam-ready{color:rgba(255,255,255,.4);font-size:12px}
+.viewfinder-wrap{flex:1;padding:0 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;background:#0d0d0d}
+.viewfinder{width:100%;aspect-ratio:1;background:#1a1a1a;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative}
+.vf-corner{position:absolute;width:24px;height:24px}
+.vf-corner.tl{top:12px;left:12px;border-top:2.5px solid rgba(255,255,255,.6);border-left:2.5px solid rgba(255,255,255,.6);border-radius:4px 0 0 0}
+.vf-corner.tr{top:12px;right:12px;border-top:2.5px solid rgba(255,255,255,.6);border-right:2.5px solid rgba(255,255,255,.6);border-radius:0 4px 0 0}
+.vf-corner.bl{bottom:12px;left:12px;border-bottom:2.5px solid rgba(255,255,255,.6);border-left:2.5px solid rgba(255,255,255,.6);border-radius:0 0 0 4px}
+.vf-corner.br{bottom:12px;right:12px;border-bottom:2.5px solid rgba(255,255,255,.6);border-right:2.5px solid rgba(255,255,255,.6);border-radius:0 0 4px 0}
+.vf-leaf{font-size:64px}
+.vf-guide{font-size:13px;color:rgba(255,255,255,.4);text-align:center;padding:0 20px}
+.cam-hint-wrap{background:#0d0d0d;padding:10px 24px 6px;text-align:center;flex-shrink:0}
+#cam-hint{font-size:14px;font-weight:600;color:rgba(255,255,255,.9);line-height:1.4}
+.photo-dots{background:#0d0d0d;display:flex;gap:10px;align-items:center;justify-content:center;padding:8px 0;flex-shrink:0}
+.photo-dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.35);transition:all 200ms ease}
+.photo-dot.filled{background:#3d8c7a;border-color:#3d8c7a;transform:scale(1.15)}
+.cam-tips{background:#0d0d0d;display:flex;gap:8px;padding:4px 20px 8px;justify-content:center;flex-wrap:wrap;flex-shrink:0}
+.cam-tip{background:rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,.6)}
+.shutter-row{background:#0d0d0d;padding:14px 20px 28px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shutter{width:70px;height:70px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;box-shadow:0 0 0 5px rgba(255,255,255,.2);transition:transform 100ms ease;-webkit-tap-highlight-color:transparent}
+.shutter:active{transform:scale(.92)}
+.analyzing-row{background:#0d0d0d;padding:14px 20px 28px;display:none;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.analyzing-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.12);border-top-color:#3d8c7a;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.analyzing-label{font-size:14px;font-weight:600;color:rgba(255,255,255,.8)}
+
+/* ── CANDIDATES ── */
+.candidate-card{background:white;border-radius:14px;padding:14px 16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px solid transparent;transition:border-color 120ms ease;-webkit-tap-highlight-color:transparent}
+.candidate-card:active{border-color:#3d8c7a}
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.card-emoji{font-size:32px;flex-shrink:0}
+.card-name{font-size:15px;font-weight:800;color:#111}
+.card-conf{font-size:12px;color:#888;margin-top:2px}
+.card-bar-wrap{height:5px;background:#f0ede8;border-radius:3px;overflow:hidden}
+.card-bar{height:100%;border-radius:3px}
+
+/* ── CONFIRM ── */
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#f0ede8;border-radius:8px;padding:7px 13px;font-size:13px;font-weight:600;color:#444;cursor:pointer;border:2px solid transparent;-webkit-tap-highlight-color:transparent;transition:border-color 100ms ease,background 100ms ease}
+.chip:active,.chip.selected{border-color:#3d8c7a;background:rgba(61,140,122,.08)}
+
+/* ── REPORT accordion ── */
+.accordion-trigger{display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.acc-icon{font-size:20px;flex-shrink:0;width:26px;text-align:center}
+.acc-label{font-size:14px;font-weight:700;color:#111;flex:1}
+.acc-chevron{font-size:12px;color:#ccc;transition:transform 200ms ease}
+.accordion-trigger.open .acc-chevron{transform:rotate(180deg);color:#3d8c7a}
+.accordion-content{max-height:0;overflow:hidden;transition:max-height 300ms ease}
+.accordion-content.open{max-height:300px}
+.acc-body{padding:0 0 14px 34px;font-size:13px;color:#555;line-height:1.7}
+.acc-divider{height:1px;background:#f0ede8;margin-left:34px}
+
+/* ── DISEASE DETAIL (browse) ── */
+.ds-hero{padding:18px 20px;display:flex;align-items:flex-start;gap:14px;background:white;border-bottom:1px solid #f0ede8;flex-shrink:0}
+.ds-hero-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.ds-hero-name{font-size:17px;font-weight:900;color:#111}
+.ds-hero-en{font-size:12px;color:#888;margin-top:2px}
+.ds-section{background:white;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.ds-section-title{font-size:13px;font-weight:700;color:#3d8c7a;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ds-section-text{font-size:13px;color:#555;line-height:1.6}
+
+/* ── KRISHI DIRECTORY ── */
+.kd-card{background:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(0,0,0,.05);border:1.5px solid #f0ede8}
+.kd-avatar{width:42px;height:42px;background:#e8f7f4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.kd-name{font-size:14px;font-weight:700;color:#111}
+.kd-role{font-size:12px;color:#888;margin-top:2px}
+.kd-phone{margin-left:auto;font-size:13px;font-weight:700;color:#3d8c7a;white-space:nowrap;flex-shrink:0}
+
+/* ── Icon overrides ── */
+i[data-lucide]{display:inline-flex}
+/* Disease tile — image-first layout */
+.disease-tile{padding:0 0 10px;gap:6px;align-items:center}
+.dt-img{width:100%;height:68px;object-fit:cover;display:block;flex-shrink:0}
+.disease-tile .dt-name{font-size:11px;font-weight:700;color:#111;text-align:center;line-height:1.3;padding:0 8px}
+.disease-tile .severity{margin:0}
+.dt-meta{display:flex;align-items:center;gap:5px;padding:0 8px;flex-wrap:nowrap}
+.crop-tag{background:#ecf7f0;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:700;color:#3d8c7a;white-space:nowrap;flex-shrink:0}
+/* ── SAVED / TIPS ── */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 24px;text-align:center}
+.empty-icon{font-size:52px}
+.empty-state h3{font-size:17px;font-weight:800;color:#111}
+.empty-state p{font-size:14px;color:#999;line-height:1.5}
+.body{padding:20px;flex:1;display:flex;flex-direction:column;gap:16px}
+</style>
+</head>
+<body>
+
+<div id="breadcrumb">Fasol Doctor — S1</div>
+<div class="phone">
+
+<!-- ══ S1 HOME ══ -->
+<div class="screen active" id="s1">
+  <div class="home-header">
+    <div>
+      <h1>Fasol Doctor</h1>
+      <p class="tagline">ধানের রোগ নির্ণয় — বিনামূল্যে</p>
+    </div>
+    <div class="icon-btn" onclick="go('sv1')">
+      <i data-lucide="clipboard-list" style="width:18px;height:18px;color:#555;stroke-width:1.75"></i>
+    </div>
+  </div>
+
+  <div class="home-body">
+
+    <!-- Weather card — rice field bg faded behind content -->
+    <div class="weather-card" style="position:relative">
+      <img src="https://picsum.photos/seed/rice-paddy-field/400/180" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.14;z-index:0;pointer-events:none">
+      <div style="position:relative;z-index:1">
+        <div class="weather-top">
+          <div style="margin-top:2px;color:rgba(255,255,255,0.85);flex-shrink:0">
+            <i data-lucide="cloud-sun" style="width:36px;height:36px;stroke-width:1.4"></i>
+          </div>
+          <div>
+            <p class="weather-loc">ময়মনসিংহ জেলা</p>
+            <p class="weather-temp">30°C</p>
+            <p class="weather-desc">আংশিক মেঘলা · আর্দ্র</p>
+          </div>
+          <div class="weather-risk">
+            <p class="risk-label">রোগের ঝুঁকি</p>
+            <span class="risk-badge risk-high">উচ্চ</span>
+          </div>
+        </div>
+        <div class="weather-bottom">
+          <div class="w-stat">
+            <i data-lucide="droplets" style="width:13px;height:13px;stroke-width:2;flex-shrink:0;color:rgba(255,255,255,0.65)"></i>
+            আর্দ্রতা ৭৮%
+          </div>
+          <div class="w-stat">
+            <i data-lucide="wind" style="width:13px;height:13px;stroke-width:2;flex-shrink:0;color:rgba(255,255,255,0.65)"></i>
+            ১৪ km/h
+          </div>
+          <div class="w-stat">
+            <i data-lucide="thermometer" style="width:13px;height:13px;stroke-width:2;flex-shrink:0;color:rgba(255,255,255,0.65)"></i>
+            অনুভূতি ৩৩°
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Area alert -->
+    <div class="alert-card">
+      <div style="flex-shrink:0;margin-top:1px;color:#d97706">
+        <i data-lucide="alert-triangle" style="width:18px;height:18px;stroke-width:2"></i>
+      </div>
+      <div>
+        <p class="alert-tag">এলাকার সতর্কতা</p>
+        <p class="alert-text">সিলেট বিভাগে পাতা ঝলসানো রোগের প্রকোপ রিপোর্ট হয়েছে। নিকটবর্তী উপজেলায় সতর্ক থাকুন।</p>
+      </div>
+    </div>
+
+    <!-- Previous detection — small thumbnail image -->
+    <div class="prev-card">
+      <p class="prev-label">শেষ স্ক্যান — ৩ দিন আগে</p>
+      <div class="prev-content">
+        <div class="prev-icon" style="padding:0;background:none;overflow:hidden">
+          <img src="https://picsum.photos/seed/rice-leaf-scan/44/44" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:12px;display:block">
+        </div>
+        <div class="prev-info">
+          <p class="prev-name">পাতা ঝলসানো রোগ</p>
+          <p class="prev-meta">Leaf Blast · ৮৪% নিশ্চিত</p>
+        </div>
+        <span class="prev-action" onclick="go('s7')" style="display:flex;align-items:center;gap:3px">
+          আপডেট
+          <i data-lucide="arrow-right" style="width:13px;height:13px;stroke-width:2.5"></i>
+        </span>
+      </div>
+    </div>
+
+    <!-- Scan CTA -->
+    <div class="scan-cta" onclick="openCamera()">
+      <div class="scan-icon-wrap">
+        <i data-lucide="scan-line" style="width:28px;height:28px;color:white;stroke-width:1.5"></i>
+      </div>
+      <div class="scan-text">
+        <h2>ফসল স্ক্যান করুন</h2>
+        <p>ক্যামেরায় পাতা ধরুন — AI রোগ শনাক্ত করবে</p>
+      </div>
+      <div style="margin-left:auto;color:rgba(255,255,255,0.45)">
+        <i data-lucide="chevron-right" style="width:22px;height:22px;stroke-width:2"></i>
+      </div>
+    </div>
+
+    <!-- Disease gallery — image-first tiles -->
+    <div>
+      <p class="sec-h">সাধারণ রোগ ও সমাধান</p>
+      <p class="sec-s" style="margin-bottom:10px">চিনুন, বুঝুন, সমাধান করুন</p>
+      <div class="disease-gallery">
+        <div class="disease-tile" onclick="openDisease('blast')">
+          <img src="https://picsum.photos/seed/leafblast/120/70" class="dt-img" alt="">
+          <span class="dt-name">পাতা ঝলসানো</span>
+          <div class="dt-meta"><span class="crop-tag">🌾 ধান</span><span class="severity sev-high">উচ্চ</span></div>
+        </div>
+        <div class="disease-tile" onclick="openDisease('blight')">
+          <img src="https://picsum.photos/seed/blightrice/120/70" class="dt-img" alt="">
+          <span class="dt-name">ব্যাকটেরিয়াল ব্লাইট</span>
+          <div class="dt-meta"><span class="crop-tag">🌾 ধান</span><span class="severity sev-high">উচ্চ</span></div>
+        </div>
+        <div class="disease-tile" onclick="openDisease('brownspot')">
+          <img src="https://picsum.photos/seed/brownleaf/120/70" class="dt-img" alt="">
+          <span class="dt-name">বাদামি দাগ</span>
+          <div class="dt-meta"><span class="crop-tag">🌾 ধান</span><span class="severity sev-med">মাঝারি</span></div>
+        </div>
+        <div class="disease-tile" onclick="openDisease('tungro')">
+          <img src="https://picsum.photos/seed/tungrorice/120/70" class="dt-img" alt="">
+          <span class="dt-name">টুংরো ভাইরাস</span>
+          <div class="dt-meta"><span class="crop-tag">🌾 ধান</span><span class="severity sev-high">উচ্চ</span></div>
+        </div>
+        <div class="disease-tile" onclick="openDisease('healthy')">
+          <img src="https://picsum.photos/seed/greenriceplant/120/70" class="dt-img" alt="">
+          <span class="dt-name">সুস্থ ধান</span>
+          <div class="dt-meta"><span class="crop-tag">🌾 ধান</span><span class="severity sev-low">ঠিক আছে</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Krishi directory -->
+    <div class="row-card" onclick="go('kd1')">
+      <div class="icon-wrap" style="background:#e8f7f4">
+        <i data-lucide="users" style="width:22px;height:22px;stroke-width:1.75;color:#3d8c7a"></i>
+      </div>
+      <div class="text">
+        <p>কৃষি কর্মকর্তার তালিকা</p>
+        <span>আপনার এলাকার কৃষিবিদ খুঁজুন</span>
+      </div>
+      <i data-lucide="chevron-right" style="width:18px;height:18px;color:#ccc;stroke-width:2"></i>
+    </div>
+
+    <!-- Helpline -->
+    <div class="call-btn">
+      <div class="call-icon-wrap">
+        <i data-lucide="phone-call" style="width:22px;height:22px;color:#166534;stroke-width:1.75"></i>
+      </div>
+      <div class="call-text">
+        <p>কৃষি হেল্পলাইন</p>
+        <span>বিনামূল্যে সরকারি পরামর্শ</span>
+      </div>
+      <span class="call-number">16123</span>
+    </div>
+
+    <div style="height:16px"></div>
+  </div>
+</div>
+
+<!-- ══ CG — CAMERA (3-shot) ══ -->
+<div class="screen" id="cg" style="background:#0d0d0d;display:flex;flex-direction:column">
+  <!-- Header -->
+  <div class="cam-header">
+    <div style="cursor:pointer;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:6px" onclick="go('s1')">
+      <i data-lucide="x" style="width:18px;height:18px;stroke-width:2.5"></i>
+      <span style="font-size:14px;font-weight:600">বাতিল</span>
+    </div>
+    <span class="cam-title">পাতার ছবি তুলুন</span>
+    <div style="display:flex;align-items:center;gap:5px;color:rgba(255,255,255,0.4)">
+      <i data-lucide="cpu" style="width:13px;height:13px;stroke-width:2"></i>
+      <span style="font-size:12px">AI প্রস্তুত</span>
+    </div>
+  </div>
+
+  <!-- Viewfinder — faded leaf image as simulated camera preview -->
+  <div class="viewfinder-wrap" style="flex:1">
+    <div class="viewfinder" style="position:relative;overflow:hidden">
+      <!-- Simulated camera feed -->
+      <img src="https://picsum.photos/seed/rice-leaf-camera/350/350" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;z-index:0">
+      <!-- Dark overlay for contrast -->
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.25);z-index:1"></div>
+      <!-- Corner guides -->
+      <div class="vf-corner tl" style="z-index:2"></div>
+      <div class="vf-corner tr" style="z-index:2"></div>
+      <div class="vf-corner bl" style="z-index:2"></div>
+      <div class="vf-corner br" style="z-index:2"></div>
+      <!-- Leaf guide ellipse -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2">
+        <svg width="200" height="130" viewBox="0 0 200 130" fill="none">
+          <ellipse cx="100" cy="65" rx="90" ry="55" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-dasharray="8 5"/>
+        </svg>
+      </div>
+      <!-- Guide text at bottom of viewfinder -->
+      <p class="vf-guide" style="position:absolute;bottom:14px;left:0;right:0;text-align:center;z-index:3;padding:0 24px">পাতাটি উপবৃত্তের মধ্যে রাখুন</p>
+    </div>
+  </div>
+
+  <!-- Hint text -->
+  <div class="cam-hint-wrap">
+    <p id="cam-hint">পাতাটি ফ্রেমে রাখুন — কাছ থেকে ধরুন</p>
+  </div>
+
+  <!-- Shot counter + dots -->
+  <div style="background:#0d0d0d;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 0">
+    <div class="photo-dots" style="padding:0">
+      <div class="photo-dot" id="dot-0"></div>
+      <div class="photo-dot" id="dot-1"></div>
+      <div class="photo-dot" id="dot-2"></div>
+    </div>
+    <span id="shot-counter" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:.03em">০ / ৩</span>
+  </div>
+
+  <!-- Tip pills with Lucide icons -->
+  <div class="cam-tips">
+    <span class="cam-tip" style="display:flex;align-items:center;gap:5px">
+      <i data-lucide="sun" style="width:12px;height:12px;stroke-width:2;flex-shrink:0"></i>ভালো আলো
+    </span>
+    <span class="cam-tip" style="display:flex;align-items:center;gap:5px">
+      <i data-lucide="crosshair" style="width:12px;height:12px;stroke-width:2;flex-shrink:0"></i>পাতা ফোকাসে
+    </span>
+    <span class="cam-tip" style="display:flex;align-items:center;gap:5px">
+      <i data-lucide="move-horizontal" style="width:12px;height:12px;stroke-width:2;flex-shrink:0"></i>কাছ থেকে
+    </span>
+  </div>
+
+  <!-- Shutter row — gallery | shutter | flip -->
+  <div class="shutter-row" id="shutter-row" style="justify-content:space-between;padding:14px 40px 32px">
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.55)">
+      <i data-lucide="image" style="width:28px;height:28px;stroke-width:1.5"></i>
+    </div>
+    <div class="shutter" onclick="takePhoto()" style="display:flex;align-items:center;justify-content:center">
+      <i data-lucide="aperture" style="width:30px;height:30px;color:#0d0d0d;stroke-width:1.5"></i>
+    </div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.55)">
+      <i data-lucide="flip-horizontal-2" style="width:28px;height:28px;stroke-width:1.5"></i>
+    </div>
+  </div>
+
+  <!-- Analyzing state -->
+  <div class="analyzing-row" id="analyzing-row">
+    <div class="analyzing-spinner"></div>
+    <p class="analyzing-label">৩টি ছবি বিশ্লেষণ করছি…</p>
+  </div>
+</div>
+
+<!-- ══ S5 — CANDIDATES ══ -->
+<div class="screen" id="s5">
+  <div class="topbar">
+    <span class="back" onclick="go('cg')" style="display:flex;align-items:center;gap:4px">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;stroke-width:2.5"></i>পিছনে
+    </span>
+    <span class="title">AI ফলাফল</span>
+  </div>
+  <div class="body" style="gap:12px">
+    <div>
+      <p style="font-size:17px;font-weight:800;color:#111">কোন রোগটির সাথে বেশি মিল?</p>
+      <p style="font-size:13px;color:#999;margin-top:4px">৩টি ছবি বিশ্লেষণ · AI-এর সেরা ৩টি সম্ভাবনা</p>
+    </div>
+
+    <!-- Top candidate — prominent -->
+    <div class="candidate-card" onclick="go('s6')" style="border-color:rgba(61,140,122,0.3);box-shadow:0 4px 16px rgba(61,140,122,0.1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:700;color:#3d8c7a;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px">
+          <i data-lucide="star" style="width:11px;height:11px;stroke-width:2.5;fill:#3d8c7a"></i>সেরা মিল
+        </span>
+        <span class="severity sev-high">উচ্চ ঝুঁকি</span>
+      </div>
+      <div class="card-header" style="margin-bottom:10px">
+        <img src="https://picsum.photos/seed/leafblast/52/52" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:12px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <p class="card-name">পাতা ঝলসানো রোগ</p>
+          <p class="card-conf">Leaf Blast · Magnaporthe oryzae</p>
+          <span class="crop-tag" style="margin-top:5px;display:inline-flex">🌾 ধান</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="card-bar-wrap" style="flex:1"><div class="card-bar" style="width:84%;background:#ef4444"></div></div>
+        <span style="font-size:14px;font-weight:800;color:#ef4444;white-space:nowrap">৮৪%</span>
+      </div>
+    </div>
+
+    <!-- 2nd candidate -->
+    <div class="candidate-card" onclick="go('s6')">
+      <div class="card-header" style="margin-bottom:10px">
+        <img src="https://picsum.photos/seed/blightrice/52/52" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:10px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <p class="card-name">ব্যাকটেরিয়াল ব্লাইট</p>
+          <p class="card-conf">Bacterial Leaf Blight</p>
+          <span class="crop-tag" style="margin-top:5px;display:inline-flex">🌾 ধান</span>
+        </div>
+        <span class="severity sev-high">উচ্চ</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="card-bar-wrap" style="flex:1"><div class="card-bar" style="width:11%;background:#f59e0b"></div></div>
+        <span style="font-size:13px;font-weight:700;color:#aaa;white-space:nowrap">১১%</span>
+      </div>
+    </div>
+
+    <!-- 3rd candidate -->
+    <div class="candidate-card" onclick="go('s6')">
+      <div class="card-header" style="margin-bottom:10px">
+        <img src="https://picsum.photos/seed/brownleaf/52/52" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:10px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <p class="card-name">বাদামি দাগ রোগ</p>
+          <p class="card-conf">Brown Spot</p>
+          <span class="crop-tag" style="margin-top:5px;display:inline-flex">🌾 ধান</span>
+        </div>
+        <span class="severity sev-med">মাঝারি</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="card-bar-wrap" style="flex:1"><div class="card-bar" style="width:5%;background:#f59e0b"></div></div>
+        <span style="font-size:13px;font-weight:700;color:#aaa;white-space:nowrap">৫%</span>
+      </div>
+    </div>
+
+    <span class="escape" onclick="openCamera()">সঠিক নয় — আবার স্ক্যান করুন</span>
+  </div>
+</div>
+
+<!-- ══ S6 — CONFIRMATION ══ -->
+<div class="screen" id="s6">
+  <div class="topbar">
+    <span class="back" onclick="openCamera()" style="display:flex;align-items:center;gap:4px">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;stroke-width:2.5"></i>পিছনে
+    </span>
+    <span class="title">রোগ শনাক্ত হয়েছে</span>
+  </div>
+  <div class="body" style="gap:14px;padding-bottom:28px">
+
+    <!-- VERDICT HERO -->
+    <div style="background:linear-gradient(135deg,#fde8e8,#fff5f5);border-radius:16px;padding:18px;display:flex;gap:16px;align-items:flex-start;border:1.5px solid rgba(239,68,68,.15)">
+      <img src="https://picsum.photos/seed/leafblast/80/80" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:12px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <p style="font-size:22px;font-weight:900;color:#111;line-height:1.25">পাতা ঝলসানো রোগ</p>
+        <p style="font-size:12px;color:#aaa;margin-top:4px">Leaf Blast</p>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <span class="crop-tag">🌾 ধান</span>
+          <span style="background:#ef4444;color:white;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:700">উচ্চ ঝুঁকি</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT IS IT -->
+    <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+      <p style="font-size:13px;font-weight:700;color:#3d8c7a;margin-bottom:8px">এটি কী?</p>
+      <p style="font-size:15px;color:#333;line-height:1.65">ছত্রাকজনিত রোগ — পাতায় ধূসর হীরার মতো দাগ পড়ে। বৃষ্টি হলে দ্রুত সারা মাঠে ছড়িয়ে যায়।</p>
+    </div>
+
+    <!-- DO NOW — numbered steps -->
+    <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+      <p style="font-size:13px;font-weight:700;color:#3d8c7a;margin-bottom:14px">এখনই করুন</p>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <span style="width:30px;height:30px;min-width:30px;background:#3d8c7a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">১</span>
+          <p style="font-size:15px;color:#222;line-height:1.55;padding-top:5px">আক্রান্ত পাতা ও ডাল ভেঙে মাঠের বাইরে ফেলে দিন</p>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <span style="width:30px;height:30px;min-width:30px;background:#3d8c7a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">২</span>
+          <p style="font-size:15px;color:#222;line-height:1.55;padding-top:5px">সেচ বন্ধ রাখুন, মাঠ কিছুটা শুকিয়ে নিন</p>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <span style="width:30px;height:30px;min-width:30px;background:#3d8c7a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">৩</span>
+          <p style="font-size:15px;color:#222;line-height:1.55;padding-top:5px">নিচের ওষুধ কিনে আজই সন্ধ্যায় স্প্রে করুন</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTICIDE -->
+    <div style="background:#fffbf0;border-radius:14px;padding:16px;border:1.5px solid rgba(234,179,8,.3)">
+      <p style="font-size:13px;font-weight:700;color:#92710b;margin-bottom:10px">ওষুধ</p>
+      <p style="font-size:19px;font-weight:800;color:#111">ট্রাইসাইক্লাজল ৭৫% WP</p>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:10px">
+          <p style="font-size:13px;color:#aaa;width:56px;flex-shrink:0">মাত্রা</p>
+          <p style="font-size:14px;color:#333;font-weight:600">১ গ্রাম প্রতি ১ লিটার পানিতে</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <p style="font-size:13px;color:#aaa;width:56px;flex-shrink:0">কোথায়</p>
+          <p style="font-size:14px;color:#333;font-weight:600">নিকটস্থ সার ও কীটনাশক দোকানে</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <p style="font-size:13px;color:#aaa;width:56px;flex-shrink:0">সতর্কতা</p>
+          <p style="font-size:14px;color:#e05252;font-weight:600">ছোট বাচ্চাদের হাতের নাগালে রাখবেন না</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- KRISHI OFFICER -->
+    <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+      <p style="font-size:13px;font-weight:700;color:#3d8c7a;margin-bottom:12px">আপনার এলাকার কৃষি কর্মকর্তা</p>
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="https://picsum.photos/seed/officer22/56/56" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <p style="font-size:16px;font-weight:800;color:#111">মো. রাশেদুল ইসলাম</p>
+          <p style="font-size:13px;color:#888;margin-top:2px">উপজেলা কৃষি অফিস, রাজশাহী</p>
+        </div>
+        <a href="tel:+880123456789" style="background:#3d8c7a;color:white;border-radius:50%;width:52px;height:52px;min-width:52px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 4px 12px rgba(61,140,122,.35);flex-shrink:0">
+          <i data-lucide="phone" style="width:22px;height:22px;stroke-width:2.5"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- SAVE -->
+    <button class="btn btn-primary" onclick="go('sv1')">রিপোর্ট সেভ করুন</button>
+
+  </div>
+</div>
+
+<!-- ══ SNM — NO MATCH ══ -->
+<div class="screen" id="snm">
+  <div class="topbar">
+    <span class="back" onclick="openCamera()" style="display:flex;align-items:center;gap:4px">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;stroke-width:2.5"></i>পিছনে
+    </span>
+  </div>
+  <div class="body" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:32px 24px;text-align:center">
+
+    <!-- Icon -->
+    <div style="width:80px;height:80px;background:#f3f0eb;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px">
+      <i data-lucide="scan-search" style="width:36px;height:36px;stroke-width:1.5;color:#bbb"></i>
+    </div>
+
+    <!-- Message -->
+    <p style="font-size:22px;font-weight:900;color:#111;line-height:1.3;margin-bottom:10px">রোগ শনাক্ত হয়নি</p>
+    <p style="font-size:15px;color:#777;line-height:1.65;max-width:280px">ছবি পরিষ্কার হয়নি, অথবা পাতায় কোনো পরিচিত রোগের লক্ষণ দেখা যায়নি।</p>
+
+    <!-- Tips -->
+    <div style="background:white;border-radius:14px;padding:16px;margin-top:28px;width:100%;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+      <p style="font-size:13px;font-weight:700;color:#3d8c7a;margin-bottom:10px">ভালো ছবির জন্য</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i data-lucide="sun" style="width:16px;height:16px;stroke-width:2;color:#f59e0b;flex-shrink:0"></i>
+          <p style="font-size:14px;color:#444">রোদের আলোয় ছবি তুলুন</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <i data-lucide="zoom-in" style="width:16px;height:16px;stroke-width:2;color:#3d8c7a;flex-shrink:0"></i>
+          <p style="font-size:14px;color:#444">পাতার কাছে গিয়ে ছবি তুলুন</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <i data-lucide="leaf" style="width:16px;height:16px;stroke-width:2;color:#3d8c7a;flex-shrink:0"></i>
+          <p style="font-size:14px;color:#444">আক্রান্ত পাতাটি মাঝখানে রাখুন</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <button class="btn btn-primary" onclick="openCamera()" style="margin-top:24px;width:100%">আবার চেষ্টা করুন</button>
+    <a href="tel:16123" style="margin-top:12px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:white;border-radius:12px;padding:14px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <i data-lucide="phone-call" style="width:18px;height:18px;stroke-width:2.5;color:#3d8c7a"></i>
+      <span style="font-size:15px;font-weight:700;color:#3d8c7a">কৃষি হেল্পলাইন — ১৬১২৩</span>
+    </a>
+
+  </div>
+</div>
+
+<!-- ══ S7 — REPORT ══ -->
+<div class="screen" id="s7">
+  <div class="topbar">
+    <span class="back" onclick="go('s6')">← পিছনে</span>
+    <span class="right">সব শুনুন ▶</span>
+  </div>
+  <div class="body" style="gap:14px">
+
+    <!-- Disease header — full perimeter border, no side-stripe -->
+    <div style="background:linear-gradient(135deg,#fde8e8,#fff4f4);border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;border:1.5px solid rgba(239,68,68,.2)">
+      <span style="font-size:40px">💥</span>
+      <div>
+        <p style="font-size:18px;font-weight:900;color:#111">পাতা ঝলসানো রোগ</p>
+        <p style="font-size:12px;color:#888;margin-top:2px">Leaf Blast (Magnaporthe oryzae)</p>
+        <span class="severity" style="background:#ef4444;color:white;margin-top:6px;display:inline-flex">উচ্চ ঝুঁকি</span>
+      </div>
+    </div>
+
+    <!-- Accordion -->
+    <div style="background:white;border-radius:14px;padding:0 16px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div class="accordion">
+        <div class="accordion-trigger open" onclick="toggleAcc(this)">
+          <span class="acc-icon">🔬</span><span class="acc-label">এটি কী</span><span class="acc-chevron">▼</span>
+        </div>
+        <div class="accordion-content open">
+          <div class="acc-body">ছত্রাকজনিত রোগ যা ধানের পাতায় হীরা আকৃতির ধূসর দাগ তৈরি করে। আর্দ্র আবহাওয়ায় দ্রুত ছড়ায়।</div>
+        </div>
+        <div class="acc-divider"></div>
+
+        <div class="accordion-trigger" onclick="toggleAcc(this)">
+          <span class="acc-icon">⚡</span><span class="acc-label">কত দ্রুত ছড়ায়</span><span class="acc-chevron">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="acc-body">বৃষ্টি ও আর্দ্র আবহাওয়ায় ৭২ ঘণ্টার মধ্যে পুরো মাঠে ছড়িয়ে পড়তে পারে।</div>
+        </div>
+        <div class="acc-divider"></div>
+
+        <div class="accordion-trigger" onclick="toggleAcc(this)">
+          <span class="acc-icon">✅</span><span class="acc-label">আজই যা করবেন</span><span class="acc-chevron">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="acc-body">আক্রান্ত পাতা সরিয়ে ফেলুন। সেচ কমান। ট্রাইসাইক্লাজল ৭৫% WP স্প্রে করুন।</div>
+        </div>
+        <div class="acc-divider"></div>
+
+        <div class="accordion-trigger" onclick="toggleAcc(this)">
+          <span class="acc-icon">🌿</span><span class="acc-label">অ-রাসায়নিক নিয়ন্ত্রণ</span><span class="acc-chevron">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="acc-body">রোগ প্রতিরোধী জাত ব্যবহার করুন। নাইট্রোজেন সার কমান। পানি সেচ নিয়ন্ত্রণ করুন।</div>
+        </div>
+        <div class="acc-divider"></div>
+
+        <div class="accordion-trigger" onclick="toggleAcc(this)">
+          <span class="acc-icon">💊</span><span class="acc-label">রাসায়নিক নিয়ন্ত্রণ</span><span class="acc-chevron">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="acc-body">ট্রাইসাইক্লাজল ০.০৬% বা আইসোপ্রোথিওলেন ৪০% EC — ৭-১০ দিন পরপর ২-৩ বার।</div>
+        </div>
+        <div class="acc-divider"></div>
+
+        <div class="accordion-trigger" onclick="toggleAcc(this)">
+          <span class="acc-icon">🛡️</span><span class="acc-label">নিরাপত্তা</span><span class="acc-chevron">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="acc-body">স্প্রে করার পর নির্ধারিত দিন না পেরোলে ফসল তুলবেন না। বাচ্চাদের কাছ থেকে দূরে রাখুন।</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Safety notice -->
+    <div style="background:#fffbf0;border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;border:1.5px solid rgba(245,158,11,.25)">
+      <span style="font-size:16px">⚠️</span>
+      <p style="font-size:12px;color:#777;line-height:1.5">স্প্রে করার পর নির্ধারিত দিন না পেরোলে ফসল তুলবেন না।</p>
+    </div>
+
+    <button class="btn btn-primary" onclick="go('sv1')">📋 রিপোর্ট সেভ করুন</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- ══ DS1 — DISEASE DETAIL (browse) ══ -->
+<div class="screen" id="ds1">
+  <div class="topbar">
+    <span class="back" onclick="go('s1')" style="display:flex;align-items:center;gap:4px"><i data-lucide="arrow-left" style="width:16px;height:16px;stroke-width:2.5"></i>পিছনে</span>
+    <span class="title" id="ds1-title">রোগের বিবরণ</span>
+  </div>
+  <div class="ds-hero">
+    <img id="ds1-img" src="https://picsum.photos/seed/leafblast/72/72" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:12px;flex-shrink:0">
+    <div style="flex:1;min-width:0">
+      <p class="ds-hero-name" id="ds1-name">পাতা ঝলসানো রোগ</p>
+      <p class="ds-hero-en" id="ds1-en">Leaf Blast</p>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
+        <span class="severity" id="ds1-sev" style="display:inline-flex">উচ্চ</span>
+        <span class="crop-tag">🌾 ধান</span>
+      </div>
+    </div>
+  </div>
+  <div class="body" style="gap:12px" id="ds1-body"></div>
+</div>
+
+<!-- ══ KD1 — KRISHI DIRECTORY ══ -->
+<div class="screen" id="kd1">
+  <div class="topbar">
+    <span class="back" onclick="go('s1')" style="display:flex;align-items:center;gap:4px"><i data-lucide="arrow-left" style="width:16px;height:16px;stroke-width:2.5"></i>পিছনে</span>
+    <span class="title">কৃষি কর্মকর্তা</span>
+  </div>
+  <div class="body" style="gap:10px;padding-bottom:24px">
+    <p style="font-size:13px;color:#888">আপনার এলাকার কৃষিবিদের সাথে যোগাযোগ করুন</p>
+
+    <!-- National helpline — prominent -->
+    <a href="tel:16123" class="call-btn" style="text-decoration:none">
+      <div class="call-icon-wrap" style="background:#dcf5ec">
+        <i data-lucide="phone-call" style="width:22px;height:22px;stroke-width:2;color:#3d8c7a"></i>
+      </div>
+      <div class="call-text"><p>কৃষি সম্প্রসারণ অধিদপ্তর</p><span>জাতীয় হেল্পলাইন · বিনামূল্যে</span></div>
+      <span class="call-number">16123</span>
+    </a>
+
+    <!-- Person: মো. আবদুর রহিম -->
+    <div class="kd-card">
+      <img src="https://picsum.photos/seed/officer1/42/42" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0">
+      <div style="flex:1;min-width:0"><p class="kd-name">মো. আবদুর রহিম</p><p class="kd-role">উপজেলা কৃষি অফিসার, ময়মনসিংহ সদর</p></div>
+      <a href="tel:01711000000" class="kd-phone" style="display:flex;align-items:center;gap:4px;text-decoration:none;color:#3d8c7a">
+        <i data-lucide="phone" style="width:13px;height:13px;stroke-width:2.5"></i>কল
+      </a>
+    </div>
+
+    <!-- Institution: BRRI -->
+    <div class="kd-card">
+      <div class="kd-avatar" style="font-size:0">
+        <i data-lucide="flask-conical" style="width:20px;height:20px;stroke-width:2;color:#3d8c7a"></i>
+      </div>
+      <div style="flex:1;min-width:0"><p class="kd-name">BRRI গবেষণা কেন্দ্র</p><p class="kd-role">ধান গবেষণা ইনস্টিটিউট, গাজীপুর</p></div>
+      <a href="tel:029290600" class="kd-phone" style="display:flex;align-items:center;gap:4px;text-decoration:none;color:#3d8c7a">
+        <i data-lucide="phone" style="width:13px;height:13px;stroke-width:2.5"></i>কল
+      </a>
+    </div>
+
+    <!-- Person: মোছা. ফাতেমা বেগম -->
+    <div class="kd-card">
+      <img src="https://picsum.photos/seed/officer3/42/42" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0">
+      <div style="flex:1;min-width:0"><p class="kd-name">মোছা. ফাতেমা বেগম</p><p class="kd-role">উপজেলা কৃষি অফিসার, সিলেট সদর</p></div>
+      <a href="tel:01712000000" class="kd-phone" style="display:flex;align-items:center;gap:4px;text-decoration:none;color:#3d8c7a">
+        <i data-lucide="phone" style="width:13px;height:13px;stroke-width:2.5"></i>কল
+      </a>
+    </div>
+
+    <!-- Institution: BAU -->
+    <div class="kd-card">
+      <div class="kd-avatar" style="font-size:0">
+        <i data-lucide="graduation-cap" style="width:20px;height:20px;stroke-width:2;color:#3d8c7a"></i>
+      </div>
+      <div style="flex:1;min-width:0"><p class="kd-name">বাংলাদেশ কৃষি বিশ্ববিদ্যালয়</p><p class="kd-role">উদ্ভিদ রোগতত্ত্ব বিভাগ, ময়মনসিংহ</p></div>
+      <a href="tel:09167401" class="kd-phone" style="display:flex;align-items:center;gap:4px;text-decoration:none;color:#3d8c7a">
+        <i data-lucide="phone" style="width:13px;height:13px;stroke-width:2.5"></i>কল
+      </a>
+    </div>
+
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- ══ SV1 — SAVED ══ -->
+<div class="screen" id="sv1">
+  <div class="topbar">
+    <span class="back" onclick="go('s1')" style="display:flex;align-items:center;gap:4px"><i data-lucide="arrow-left" style="width:16px;height:16px;stroke-width:2.5"></i>পিছনে</span>
+    <span class="title">আমার রিপোর্ট</span>
+  </div>
+  <div class="body" style="gap:12px">
+    <div class="row-card" onclick="go('s6')">
+      <img src="https://picsum.photos/seed/leafblast/48/48" alt="" style="width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0">
+      <div class="text">
+        <p>পাতা ঝলসানো রোগ</p>
+        <span>৩ দিন আগে · Leaf Blast</span>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+    <div style="height:1px;background:#f0ede8"></div>
+    <p style="font-size:13px;color:#bbb;text-align:center">নতুন রিপোর্ট সেভ করতে ফসল স্ক্যান করুন</p>
+    <button class="btn btn-secondary" onclick="openCamera()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+      <i data-lucide="scan-line" style="width:18px;height:18px;stroke-width:2.5"></i>নতুন স্ক্যান
+    </button>
+  </div>
+</div>
+
+<!-- ══ T1 — TIPS ══ -->
+<div class="screen" id="t1">
+  <div class="topbar">
+    <span class="back" onclick="go('s1')">← পিছনে</span>
+    <span class="title">কৃষি টিপস</span>
+  </div>
+  <div class="empty-state">
+    <div class="empty-icon">🌱</div>
+    <p>এই মাসের টিপস শীঘ্রই আসছে।</p>
+  </div>
+</div>
+
+</div><!-- /phone -->
+
+<div id="flow-label">
+  S1 Home → CG Camera (৩ শট) → S6 Result+Action → SV1 Saved<br>
+  CG → SNM No Match → Camera / 16123 &nbsp;|&nbsp; S1 → DS1 Disease Detail &nbsp;|&nbsp; S1 → KD1 Directory
+</div>
+
+<script>
+let current = 's1';
+let photoCount = 0;
+
+const DISEASES = {
+  blast: {
+    imgSeed:'leafblast', name:'পাতা ঝলসানো রোগ', en:'Leaf Blast (Magnaporthe oryzae)',
+    sevClass:'sev-high', sevLabel:'উচ্চ ঝুঁকি',
+    what:'ছত্রাকজনিত রোগ। পাতায় হীরা আকৃতির ধূসর-সাদা দাগ। আর্দ্র আবহাওয়ায় ৭২ ঘণ্টায় পুরো মাঠে ছড়াতে পারে।',
+    today:'আক্রান্ত পাতা সরিয়ে ফেলুন। সেচ কমান। ট্রাইসাইক্লাজল ৭৫% WP স্প্রে করুন।',
+    prevent:'রোগ প্রতিরোধী জাত ব্যবহার করুন। নাইট্রোজেন সার পরিমিত দিন। মাঠ পর্যবেক্ষণ নিয়মিত করুন।'
+  },
+  blight: {
+    imgSeed:'blightrice', name:'ব্যাকটেরিয়াল ব্লাইট', en:'Bacterial Leaf Blight (Xanthomonas oryzae)',
+    sevClass:'sev-high', sevLabel:'উচ্চ ঝুঁকি',
+    what:'ব্যাকটেরিয়াজনিত রোগ। পাতার কিনারা হলদে হয়ে শুকিয়ে যায়। জলাবদ্ধ অবস্থায় দ্রুত বাড়ে।',
+    today:'জলাবদ্ধতা দূর করুন। নাইট্রোজেন সার বন্ধ রাখুন। কপার ফাঙ্গিসাইড ব্যবহার করুন।',
+    prevent:'পানি নিষ্কাশনের ব্যবস্থা করুন। সুস্থ বীজ ব্যবহার করুন। বীজ শোধন করে রোপণ করুন।'
+  },
+  brownspot: {
+    imgSeed:'brownleaf', name:'বাদামি দাগ রোগ', en:'Brown Spot (Cochliobolus miyabeanus)',
+    sevClass:'sev-med', sevLabel:'মাঝারি',
+    what:'ছত্রাকজনিত রোগ। পাতায় গোলাকার বাদামি দাগ, চারদিকে হলদে হালো। মাটির পুষ্টির অভাবে বাড়ে।',
+    today:'ম্যাঙ্গানিজ ও পটাশ সার দিন। ম্যানকোজেব স্প্রে করুন।',
+    prevent:'মাটি পরীক্ষা করে সুষম সার দিন। জৈব সার ব্যবহার বাড়ান।'
+  },
+  tungro: {
+    imgSeed:'tungrorice', name:'টুংরো ভাইরাস', en:'Rice Tungro Disease (RTD)',
+    sevClass:'sev-high', sevLabel:'উচ্চ ঝুঁকি',
+    what:'ভাইরাসজনিত রোগ। পাতা হলুদ-কমলা রঙ ধারণ করে। গ্রিন লিফহপার পোকা দ্বারা ছড়ায়।',
+    today:'আক্রান্ত গাছ উপড়ে পুড়িয়ে ফেলুন। কীটনাশক দিয়ে পোকা দমন করুন।',
+    prevent:'রোগ প্রতিরোধী জাত লাগান। লিফহপার পোকা নিয়ন্ত্রণ করুন।'
+  },
+  healthy: {
+    imgSeed:'healthyrice', name:'সুস্থ ধান', en:'Healthy Rice Plant',
+    sevClass:'sev-low', sevLabel:'সুস্থ',
+    what:'আপনার ধান গাছ সুস্থ দেখাচ্ছে। পাতা সবুজ ও তাজা, কোনো রোগের লক্ষণ নেই।',
+    today:'নিয়মিত পর্যবেক্ষণ চালিয়ে যান। সার ও সেচ পরিকল্পনামতো দিন।',
+    prevent:'প্রতিরোধ সবচেয়ে ভালো চিকিৎসা। সপ্তাহে একবার মাঠ পরিদর্শন করুন।'
+  }
+};
+
+function go(id) {
+  const prev = document.getElementById(current);
+  const next = document.getElementById(id);
+  if (!next || id === current) return;
+  prev.classList.remove('active');
+  prev.classList.add('back-exit');
+  setTimeout(() => prev.classList.remove('back-exit'), 250);
+  next.classList.add('active');
+  next.scrollTop = 0;
+  document.getElementById('breadcrumb').textContent = 'Fasol Doctor — ' + id.toUpperCase();
+  current = id;
+}
+
+function openCamera() {
+  resetCamera();
+  go('cg');
+}
+
+const BN_DIGITS = ['০','১','২','৩'];
+function takePhoto() {
+  if (photoCount >= 3) return;
+  document.getElementById('dot-' + photoCount).classList.add('filled');
+  photoCount++;
+  document.getElementById('shot-counter').textContent = BN_DIGITS[photoCount] + ' / ৩';
+  const hints = [
+    'আরও ২টি ছবি নিন — কোণ পরিবর্তন করুন',
+    'শেষ ১টি ছবি — অন্য দিক থেকে নিন',
+    '৩টি ছবি পেয়েছি — বিশ্লেষণ করছি…'
+  ];
+  document.getElementById('cam-hint').textContent = hints[photoCount - 1];
+  if (photoCount === 3) {
+    document.getElementById('shutter-row').style.display = 'none';
+    document.getElementById('analyzing-row').style.display = 'flex';
+    setTimeout(() => go('s6'), 2000);
+  }
+}
+
+function resetCamera() {
+  photoCount = 0;
+  for (let i = 0; i < 3; i++) document.getElementById('dot-' + i).classList.remove('filled');
+  document.getElementById('cam-hint').textContent = 'পাতাটি ফ্রেমে রাখুন — কাছ থেকে ধরুন';
+  document.getElementById('shot-counter').textContent = '০ / ৩';
+  document.getElementById('shutter-row').style.display = 'flex';
+  document.getElementById('analyzing-row').style.display = 'none';
+}
+
+function openDisease(key) {
+  const d = DISEASES[key];
+  if (!d) return;
+  document.getElementById('ds1-title').textContent = d.name;
+  document.getElementById('ds1-img').src = `https://picsum.photos/seed/${d.imgSeed}/72/72`;
+  document.getElementById('ds1-name').textContent = d.name;
+  document.getElementById('ds1-en').textContent = d.en;
+  const sev = document.getElementById('ds1-sev');
+  sev.className = 'severity ' + d.sevClass;
+  sev.style.display = 'inline-flex';
+  sev.textContent = d.sevLabel;
+  document.getElementById('ds1-body').innerHTML = `
+    <div class="ds-section">
+      <p class="ds-section-title"><i data-lucide="microscope" style="width:14px;height:14px;stroke-width:2.5;flex-shrink:0"></i>এটি কী</p>
+      <p class="ds-section-text">${d.what}</p>
+    </div>
+    <div class="ds-section">
+      <p class="ds-section-title"><i data-lucide="list-checks" style="width:14px;height:14px;stroke-width:2.5;flex-shrink:0"></i>আজই করুন</p>
+      <p class="ds-section-text">${d.today}</p>
+    </div>
+    <div class="ds-section">
+      <p class="ds-section-title"><i data-lucide="shield-check" style="width:14px;height:14px;stroke-width:2.5;flex-shrink:0"></i>প্রতিরোধ</p>
+      <p class="ds-section-text">${d.prevent}</p>
+    </div>
+    <button class="btn btn-primary" onclick="openCamera()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+      <i data-lucide="scan-line" style="width:18px;height:18px;stroke-width:2.5"></i>ফসল স্ক্যান করুন
+    </button>
+    <div style="height:8px"></div>
+  `;
+  lucide.createIcons();
+  go('ds1');
+}
+
+lucide.createIcons();
+
+function toggleAcc(trigger) {
+  const content = trigger.nextElementSibling;
+  const isOpen = trigger.classList.contains('open');
+  trigger.closest('.accordion').querySelectorAll('.accordion-trigger.open').forEach(t => {
+    t.classList.remove('open');
+    t.nextElementSibling.classList.remove('open');
+  });
+  if (!isOpen) { trigger.classList.add('open'); content.classList.add('open'); }
+}
+</script>
+</body>
+</html>

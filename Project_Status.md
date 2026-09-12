@@ -3,9 +3,18 @@ project: fasol-doctor
 started: 2026-09-12
 status: active
 stack: python + pytorch + timm + onnx
-tier: stalk
-current_phase: "Phase 1 — Dataset acquisition + Stage 1 training"
+tier: mewking
+current_phase: "Phase 2 (ML) — Awaiting field photos | Phase 0 (App) — COMPLETE, Phase 1 next"
 plan_approved: true
+app_plan: "proposals/active/app-build/plan.md"
+tdd: off
+stage1_results:
+  macro_f1_val: 0.9916
+  ece_val: 0.0433
+  total_images: 11639
+  checkpoint: "runs/stage1/best.pt"
+  onnx: "runs/stage1/fasol_doctor.onnx (16 MB unquantised)"
+  note: "Trained on Kaggle T4 GPU. Val F1 is on public dataset distribution — real-field performance assessed at Stage 2."
 output: "fasol_doctor.onnx (~4-6 MB quantised, on-device Android inference)"
 classes:
   - bacterial_leaf_blight
@@ -26,10 +35,15 @@ datasets:
     - "RiceyLeafDisease — 1,701 originals (skip pre-augmented copies), CC BY 4.0"
   pending_licence_check:
     - "BRRI dataset — expert-annotated, BRRI-sourced; verify licence before production"
+  used_in_stage1:
+    - "RiceLeafBD — 1,560 Bangladeshi field images (4 classes)"
+    - "Nirmal/Sethy rice disease images — 5,932 images"
+    - "vbookshelf rice leaf diseases — 120 images"
+    - "PlantVillage (non-rice folders) — 500 not_rice_leaf images"
   still_needed:
-    - "not_rice_leaf class — 300–500 miscellaneous non-rice-leaf images"
     - "Field photos for Stage 2 — 150–300 per class, agronomist-verified (3–6 weeks)"
-next_action: "Download datasets via scripts/download_datasets.py, then run prepare_data.py"
+    - "BRRI dataset — pending licence check"
+next_action: "Wait for BRAC field photos, then run Stage 2 fine-tuning on Kaggle"
 blockers: []
 open_questions:
   - "BRRI licence — verify on Mendeley before including in any commercial release"
@@ -58,7 +72,7 @@ MobileNetV3-Large, ONNX export.
 | Phase | What | Status |
 |---|---|---|
 | 0 — Setup | Scripts written, environment documented | ✓ Done |
-| 1 — Stage 1 training | Download public datasets, prepare_data.py, train on ~10k images | Next |
+| 1 — Stage 1 training | Download public datasets, prepare_data.py, train on ~10k images | ✓ Done (macro-F1 0.99, ECE 0.04) |
 | 2 — Stage 2 fine-tuning | Field photos collected, 150–300/class, lower-LR fine-tune | Blocked on field data |
 | 3 — Calibration + eval | ECE check, temperature scaling if needed, full metrics | After Phase 2 |
 | 4 — Handover | ONNX + classes.json + preprocessing spec + verification test | Final |
