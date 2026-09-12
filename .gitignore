@@ -1,0 +1,39 @@
+# Raw downloaded datasets — large, not committed
+raw_datasets/
+
+# Processed splits — regenerable from prepare_data.py
+data/
+
+# Training runs — large checkpoints and ONNX files
+# Commit only the final fasol_doctor.onnx and classes.json via git-lfs or manual upload
+runs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
